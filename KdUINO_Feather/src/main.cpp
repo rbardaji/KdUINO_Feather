@@ -1,4 +1,97 @@
 #include <Arduino.h>
+#include <SPI.h>
+#include <SD.h>
+#include <Wire.h>
+#include "RTClib.h"
+#include "Adafruit_TCS34725.h"
+
+// Settings
+int initial_wait = 10;      // Time to wait before start the loop (in seconds)
+int measures = 1;           // Number of measurements to do[1, period-1]
+int period = 60;            // Sampling period (in seconds)
+float depth = 0.3;          // Absolute depth of the device [0.1, 30] (in meters)
+float lat = 0;              // Latitude
+float lon = 0;              // Longitude
+String timestamp = "2018/01/01 00:00:00";
+int sample_counter = 1;     // Counter of measurements
+String name = "KdUINOPro";  // Name of the module   
+String maker = "ICM-CSIC";  // Maker name
+String curator = "ICM-CSIC";// Curator name
+String email = "";          // Email of the curator
+String sensors = "TCS34725";// List with name of used sensors "Sensor 1, ..., Sensor n"
+String description = "Test prototype";
+String place = "lab ICM";   // Text with place of deployment
+String units = "";          // Units of the measurements "Unit 1, ..., Unit n"
+
+// Contants
+#define BAUDRATE 9600
+#define REDLED 0
+#define BLUELED 2
+#define TCS34725LED 14
+
+// Vars
+RTC_PCF8523 rtc;
+const int chipSelect_SD = 15;
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_700MS, TCS34725_GAIN_1X);
+
+void setup () {
+    // CONFIGURATION
+    
+    // Red Led
+    pinMode(REDLED, OUTPUT);
+    digitalWrite(REDLED, HIGH);
+    pinMode(BLUELED, OUTPUT);
+    digitalWrite(BLUELED, LOW);
+    
+    // Serial
+    Serial.begin(BAUDRATE);
+    
+    // RTC
+    Serial.print("Initializing RTC.");
+    if (! rtc.begin()) {
+        Serial.println("Couldn't find RTC");
+        digitalWrite(REDLED, LOW);
+        while (1);
+    }
+    Serial.println(" Done.");
+    
+    // SD
+    Serial.print("Initializing SD card.");
+    pinMode(SS, OUTPUT);
+    if (!SD.begin(chipSelect_SD)) {
+        Serial.println("Card failed, or not present");
+        digitalWrite(REDLED, LOW);
+        while (1);
+    }
+    Serial.println(" Done.");
+    
+    // TCS34725
+    Serial.print("Initializing TCS34725.");
+    if (tcs.begin()) {
+        Serial.println(" Done.");
+    } else {
+        Serial.println("No TCS34725 found");
+        digitalWrite(REDLED, LOW);
+        while (1);
+    }
+    
+    // Read setting from settings.txt of the SD
+
+    // Initial wait
+    delay(initial_wait*1000);
+    
+    digitalWrite(BLUELED, HIGH);
+}
+
+void loop () {
+    // Read time
+    DateTime now = rtc.now();
+    // measurements
+    // Save values to SD
+    delay(500);
+}
+
+// 
 /*// Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 #include <Wire.h>
 #include "RTClib.h"
@@ -70,7 +163,7 @@ void loop () {
     delay(3000);
 }*/
 
-#include <Wire.h>
+/*#include <Wire.h>
 #include "Adafruit_TCS34725.h"
 
 /* Example code for the Adafruit TCS34725 breakout library */
@@ -83,7 +176,7 @@ void loop () {
 /* Initialise with default values (int time = 2.4ms, gain = 1x) */
 // Adafruit_TCS34725 tcs = Adafruit_TCS34725();
 
-/* Initialise with specific int time and gain values */
+/* Initialise with specific int time and gain values
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_700MS, TCS34725_GAIN_1X);
 
 void setup(void) {
@@ -113,4 +206,4 @@ void loop(void) {
   Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
   Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
   Serial.println(" ");
-}
+}*/
