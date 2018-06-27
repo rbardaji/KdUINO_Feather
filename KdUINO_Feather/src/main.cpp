@@ -6,7 +6,7 @@
 #include "Adafruit_TCS34725.h"
 
 // Settings
-int initial_wait = 60;       // Time to wait before start the loop (in seconds)
+int initial_wait = 1;    // Time to wait before start the loop (in seconds)
 int measures = 5;           // Number of measurements to do[1, 59]
 int period = 1;             // Sampling period (in minutes) [1, 60]
 float depth = 0.3;          // Absolute depth of the device [0.1, 30] (in meters)
@@ -19,7 +19,7 @@ String maker = "ICM-CSIC";  // Maker name
 String curator = "ICM-CSIC";// Curator name
 String email = "";          // Email of the curator
 String sensors = "TCS34725";// List with name of used sensors "Sensor 1, ..., Sensor n"
-String description = "Test prototype";
+String description = "Test prototype without filter";
 String place = "lab ICM";   // Text with place of deployment
                             // Units of the measurements "Unit 1, ..., Unit n"
 String units = "counts, counts, counts, counts, lux, degree_celsius, percent";
@@ -31,6 +31,8 @@ String units = "counts, counts, counts, counts, lux, degree_celsius, percent";
 #define TCS34725LED 14
 #define BATPIN A0 // Power management
 
+// Communication protocol
+#define UPDATE_RTC 'T'
 // Vars
 RTC_PCF8523 rtc;
 const int chipSelect_SD = 15;
@@ -45,9 +47,13 @@ void measure_battery();
 void serial_data();
 void serial_metadata();
 void serial_header();
+void serial_date();
+void serial_battery_level();
 void save_data();
 void save_metadata();
 void save_header();
+void actions();
+void update_rtc();
 
 void setup () {
     // CONFIGURATION
@@ -60,7 +66,7 @@ void setup () {
     
     // Serial
     Serial.begin(BAUDRATE);
-    
+    Serial.println("");
     // RTC
     Serial.print("Initializing RTC.");
     if (! rtc.begin()) {
@@ -68,16 +74,21 @@ void setup () {
         digitalWrite(REDLED, LOW);
         while (1);
     }
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     Serial.println(" Done.");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    if (! rtc.initialized()) {
+        Serial.println("RTC is NOT running!");
+    }
     
     // SD
     Serial.print("Initializing SD card.");
     pinMode(SS, OUTPUT);
     if (!SD.begin(chipSelect_SD)) {
-        Serial.println("Card failed, or not present");
         digitalWrite(REDLED, LOW);
-        while (1);
+        while (1){
+            Serial.println("Card failed, or not present");
+            delay(100000);
+        }
     }
     Serial.println(" Done.");
     
@@ -94,8 +105,17 @@ void setup () {
     // Read setting from settings.txt of the SD
 
     // Initial wait
+    Serial.print("Waiting ");
+    Serial.print(initial_wait);
+    Serial.println(" seconds");
     delay(initial_wait*1000);
     
+    // Read time
+    now = rtc.now();
+    measure_battery();
+    serial_date();
+    serial_battery_level();
+
     // Write metadata and header into file.txt
     save_metadata();
     save_header();
@@ -123,6 +143,7 @@ void loop () {
             save_data();
         }
     }
+    actions();
     delay(500);
 }
 
@@ -131,9 +152,32 @@ void loop () {
 ////////////////////////////////////////////////////////////
 
 void measure_TCS34725(){
-    tcs.getRawData(&r, &g, &b, &c);
-    colorTemp = tcs.calculateColorTemperature(r, g, b);
-    lux = tcs.calculateLux(r, g, b);
+    for (int i = 0; i < measures; i++) {
+        uint16_t r_, g_, b_, c_, colorTemp_, lux_;
+        // Measure
+        tcs.getRawData(&r_, &g_, &b_, &c_);
+        colorTemp_ = tcs.calculateColorTemperature(r_, g_, b_);
+        lux_ = tcs.calculateLux(r_, g_, b_);
+        // Calculation of means
+        if (i == 0) {
+            r = r_;
+            g = g_;
+            b = b_;
+            c = c_;
+            colorTemp = colorTemp_;
+            lux = lux_;
+        }
+        else {
+            r = (r + r_)/2;
+            g = (g + g_)/2;
+            b = (b + b_)/2;
+            c = (c + c_)/2;
+            colorTemp = (colorTemp + colorTemp_)/2;
+            lux = (lux + lux_)/2;
+        }
+
+    }
+    
 }
 
 void measure_battery(){
@@ -143,7 +187,7 @@ void measure_battery(){
     // lipo value of 4.2V and drops it to 0.758V max.
     // this means our min analog read value should be 580 (3.14V)
     // and the max analog read value should be 774 (4.2V).
-    battery_level = analogRead(BATPIN);
+    battery_level = analogRead(A0);
     // convert battery level to percent
     battery_level = map(battery_level, 580, 774, 0, 100);
 }
@@ -151,6 +195,28 @@ void measure_battery(){
 ////////////////////////////////////////////////////////////
 //////////////////// SERIAL COMMUNICATION //////////////////
 ////////////////////////////////////////////////////////////
+
+void serial_battery_level(){
+    /*It sends the data throught the serial  communication*/
+    Serial.print("Battery Level: ");
+    Serial.println(battery_level);
+}
+
+void serial_date(){
+    /*It sends the data throught the serial  communication*/
+    Serial.print("NEW Date: ");
+    Serial.print(now.year(), DEC);
+    Serial.print("/");
+    Serial.print(now.month(), DEC);
+    Serial.print("/");
+    Serial.print(now.day(), DEC);
+    Serial.print(" ");
+    Serial.print(now.hour(), DEC);
+    Serial.print(":");
+    Serial.print(now.minute(), DEC);
+    Serial.print(":");
+    Serial.println(now.second(), DEC);
+}
 
 void serial_data(){
     /*It sends the data throught the serial  communication*/
@@ -177,8 +243,8 @@ void serial_data(){
     Serial.print(lux);
     Serial.print(" ");
     Serial.print(colorTemp);
-    Serial.print(" ");
-    Serial.print(battery_level);
+    // Serial.print(" ");
+    // Serial.print(battery_level);
     Serial.println("");
 }
 
@@ -241,32 +307,32 @@ void save_data(){
         while (1) ;
     }
     // Save data
-    data_file.print(now.year(), DEC);
-    data_file.print("/");
-    data_file.print(now.month(), DEC);
-    data_file.print("/");
-    data_file.print(now.day(), DEC);
-    data_file.print(" ");
-    data_file.print(now.hour(), DEC);
-    data_file.print(":");
-    data_file.print(now.minute(), DEC);
-    data_file.print(":");
-    data_file.print(now.second(), DEC);
-    data_file.print(" ");
-    data_file.print(r, DEC);
-    data_file.print(" ");
-    data_file.print(g, DEC);
-    data_file.print(" ");
-    data_file.print(b, DEC);
-    data_file.print(" ");
-    data_file.print(c, DEC);
-    data_file.print(" ");
-    data_file.print(lux);
-    data_file.print(" ");
-    data_file.print(colorTemp);
-    data_file.print(" ");
-    data_file.print(battery_level);
-    data_file.println("");
+    data_file.print(now.year(), DEC); data_file.flush();
+    data_file.print("/"); data_file.flush();
+    data_file.print(now.month(), DEC); data_file.flush();
+    data_file.print("/"); data_file.flush();
+    data_file.print(now.day(), DEC); data_file.flush();
+    data_file.print(" "); data_file.flush();
+    data_file.print(now.hour(), DEC); data_file.flush();
+    data_file.print(":"); data_file.flush();
+    data_file.print(now.minute(), DEC); data_file.flush();
+    data_file.print(":"); data_file.flush();
+    data_file.print(now.second(), DEC); data_file.flush();
+    data_file.print(" "); data_file.flush();
+    data_file.print(r, DEC); data_file.flush();
+    data_file.print(" "); data_file.flush();
+    data_file.print(g, DEC); data_file.flush();
+    data_file.print(" "); data_file.flush();
+    data_file.print(b, DEC); data_file.flush();
+    data_file.print(" "); data_file.flush();
+    data_file.print(c, DEC); data_file.flush();
+    data_file.print(" "); data_file.flush();
+    data_file.print(lux); data_file.flush();
+    data_file.print(" "); data_file.flush();
+    data_file.print(colorTemp); data_file.flush();
+    // data_file.print(" "); data_file.flush();
+    // data_file.print(battery_level); data_file.flush();
+    data_file.println(""); data_file.flush();
     // Close dataFile
     data_file.close();
 }
@@ -282,39 +348,39 @@ void save_metadata(){
         while (1) ;
     }
     // Save metadata
-    data_file.println("METADATA");
-    data_file.print("initial_wait: ");
-    data_file.println(initial_wait, DEC);
-    data_file.print("measures: ");
-    data_file.println(measures, DEC);
-    data_file.print("period: ");
-    data_file.println(period, DEC);
-    data_file.print("depth: ");
-    data_file.println(depth);
-    data_file.print("lat: ");
-    data_file.println(lat);
-    data_file.print("lon: ");
-    data_file.println(lon);
-    data_file.print("timestamp: ");
-    data_file.println(timestamp);
-    data_file.print("sample_counter: ");
-    data_file.println(sample_counter);
-    data_file.print("name: ");
-    data_file.println(name);
-    data_file.print("maker: ");
-    data_file.println(maker);
-    data_file.print("curator: ");
-    data_file.println(curator);
-    data_file.print("email: ");
-    data_file.println(email);
-    data_file.print("sensors: ");
-    data_file.println(sensors);
-    data_file.print("description: ");
-    data_file.println(description);
-    data_file.print("place: ");
-    data_file.println(place);
-    data_file.print("units: ");
-    data_file.println(units);
+    data_file.println("METADATA"); data_file.flush();
+    data_file.print("initial_wait: "); data_file.flush();
+    data_file.println(initial_wait, DEC); data_file.flush();
+    data_file.print("measures: "); data_file.flush();
+    data_file.println(measures, DEC); data_file.flush();
+    data_file.print("period: "); data_file.flush();
+    data_file.println(period, DEC); data_file.flush();
+    data_file.print("depth: "); data_file.flush();
+    data_file.println(depth); data_file.flush();
+    data_file.print("lat: "); data_file.flush();
+    data_file.println(lat); data_file.flush();
+    data_file.print("lon: "); data_file.flush();
+    data_file.println(lon); data_file.flush();
+    data_file.print("timestamp: "); data_file.flush();
+    data_file.println(timestamp); data_file.flush();
+    data_file.print("sample_counter: "); data_file.flush();
+    data_file.println(sample_counter); data_file.flush();
+    data_file.print("name: "); data_file.flush();
+    data_file.println(name); data_file.flush();
+    data_file.print("maker: "); data_file.flush();
+    data_file.println(maker); data_file.flush();
+    data_file.print("curator: "); data_file.flush();
+    data_file.println(curator); data_file.flush();
+    data_file.print("email: "); data_file.flush();
+    data_file.println(email); data_file.flush();
+    data_file.print("sensors: "); data_file.flush();
+    data_file.println(sensors); data_file.flush();
+    data_file.print("description: "); data_file.flush();
+    data_file.println(description); data_file.flush();
+    data_file.print("place: "); data_file.flush();
+    data_file.println(place); data_file.flush();
+    data_file.print("units: "); data_file.flush();
+    data_file.println(units); data_file.flush();
     // Close dataFile
     data_file.close();
 }
@@ -330,8 +396,95 @@ void save_header(){
         while (1) ;
     }
     // Save header
-    data_file.println("DATA");
+    data_file.println("DATA"); data_file.flush();
     data_file.println("DATE HOUR RED GREEN BLUE CLEAR LUX COLOR_TEMP BATTERY");
+    data_file.flush();
     // Close dataFile
     data_file.close();
+}
+
+
+///////////////////////////////////////////
+///////////// ACTIONS /////////////////////
+///////////////////////////////////////////
+
+void actions() {
+    int inByte = 0; // incomming serial byte
+    if (Serial.available() > 0) {
+        // get incoming byte:
+        inByte = Serial.read();
+        if (inByte == UPDATE_RTC){
+            update_rtc();
+        }
+    }
+}
+
+void update_rtc() {
+    int watchdog_time = 100; // To do it not blocking
+    int inByte = 0;
+    
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+
+    for (int i=0; i<watchdog_time; i++) {
+        if (Serial.available() > 13) { // YYYYMMDDhhmmss (14 bytes to receive)
+            for (int date_position = 0; date_position < 14; date_position++) {
+                // get incoming byte
+                inByte = Serial.read();
+                switch (date_position) {
+                    case 0:
+                        year += (inByte - '0')*1000;
+                        break;
+                    case 1:
+                        year += (inByte - '0')*100;
+                        break;
+                    case 2:
+                        year += (inByte - '0')*10;
+                        break;
+                    case 3:
+                        year += (inByte - '0');
+                        break;
+                    case 4:
+                        month += (inByte - '0')*10;
+                        break;
+                    case 5:
+                        month += (inByte - '0');
+                        break;
+                    case 6:
+                        day += (inByte - '0')*10;
+                        break;
+                    case 7:
+                        day += (inByte - '0');
+                        break;
+                    case 8:
+                        hour += (inByte - '0')*10;
+                        break;
+                    case 9:
+                        hour += (inByte - '0');
+                        break;
+                    case 10:
+                        minute += (inByte - '0')*10;
+                        break;
+                    case 11:
+                        minute += (inByte - '0');
+                        break;
+                    case 12:
+                        second += (inByte - '0')*10;
+                        break;
+                    case 13:
+                        second += (inByte - '0');
+                        break;
+                }
+            }
+            rtc.adjust(DateTime(year, month, day, hour, minute, second));
+            // Read time
+            now = rtc.now();
+            serial_date();
+        }
+        else delay(1000);
+    }
 }
