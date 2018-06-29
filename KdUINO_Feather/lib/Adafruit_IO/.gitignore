@@ -1,0 +1,11 @@
+*.swo
+*.swp
+.DS_Store
+.sync
+.syntastic_cpp_config
+
+# platformio (testing)
+.pioenvs
+.piolibdeps
+platformio.ini
+.tests

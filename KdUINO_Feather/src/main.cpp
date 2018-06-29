@@ -6,29 +6,28 @@
 #include "Adafruit_TCS34725.h"
 
 // Settings
-int initial_wait = 1;    // Time to wait before start the loop (in seconds)
+int initial_wait = 1;       // Time to wait before start the loop (in seconds)
 int measures = 5;           // Number of measurements to do[1, 59]
 int period = 1;             // Sampling period (in minutes) [1, 60]
 float depth = 0.3;          // Absolute depth of the device [0.1, 30] (in meters)
 float lat = 0;              // Latitude
 float lon = 0;              // Longitude
-String timestamp = "2018/01/01 00:00:00";
 int sample_counter = 1;     // Counter of measurements
 String name = "KdUINOPro";  // Name of the module   
 String maker = "ICM-CSIC";  // Maker name
 String curator = "ICM-CSIC";// Curator name
 String email = "";          // Email of the curator
 String sensors = "TCS34725";// List with name of used sensors "Sensor 1, ..., Sensor n"
-String description = "Test prototype without filter";
+String description = "Test prototype without 2 light filters";
 String place = "lab ICM";   // Text with place of deployment
                             // Units of the measurements "Unit 1, ..., Unit n"
-String units = "counts, counts, counts, counts, lux, degree_celsius, percent";
+String units = "counts, counts, counts, counts, lux, degree_celsius";
 
 // Contants
 #define BAUDRATE 9600
 #define REDLED 0
 #define BLUELED 2
-#define TCS34725LED 14
+// #define TCS34725LED 14
 #define BATPIN A0 // Power management
 
 // Communication protocol
@@ -63,7 +62,9 @@ void setup () {
     digitalWrite(REDLED, HIGH);
     pinMode(BLUELED, OUTPUT);
     digitalWrite(BLUELED, LOW);
-    
+    // pinMode(TCS34725LED, OUTPUT);
+    // digitalWrite(TCS34725LED, LOW);
+
     // Serial
     Serial.begin(BAUDRATE);
     Serial.println("");
@@ -87,7 +88,7 @@ void setup () {
         digitalWrite(REDLED, LOW);
         while (1){
             Serial.println("Card failed, or not present");
-            delay(100000);
+            delay(10000);
         }
     }
     Serial.println(" Done.");
@@ -95,6 +96,7 @@ void setup () {
     // TCS34725
     Serial.print("Initializing TCS34725.");
     if (tcs.begin()) {
+        tcs.clearInterrupt();
         Serial.println(" Done.");
     } else {
         Serial.println("No TCS34725 found");
@@ -112,9 +114,7 @@ void setup () {
     
     // Read time
     now = rtc.now();
-    measure_battery();
     serial_date();
-    serial_battery_level();
 
     // Write metadata and header into file.txt
     save_metadata();
@@ -264,7 +264,17 @@ void serial_metadata(){
     Serial.print("lon: ");
     Serial.println(lon);
     Serial.print("timestamp: ");
-    Serial.println(timestamp);
+    Serial.print(now.year(), DEC);
+    Serial.print("/");
+    Serial.print(now.month(), DEC);
+    Serial.print("/");
+    Serial.print(now.day(), DEC);
+    Serial.print(" ");
+    Serial.print(now.hour(), DEC);
+    Serial.print(":");
+    Serial.print(now.minute(), DEC);
+    Serial.print(":");
+    Serial.println(now.second(), DEC);
     Serial.print("sample_counter: ");
     Serial.println(sample_counter);
     Serial.print("name: ");
@@ -289,7 +299,7 @@ void serial_header(){
     /*It sends the header info of the datathrought the serial
     communication*/
     Serial.println("DATA");
-    Serial.println("DATE HOUR RED GREEN BLUE CLEAR LUX COLOR_TEMP BATTERY");
+    Serial.println("DATE HOUR RED GREEN BLUE CLEAR LUX COLOR_TEMP");
 }
 
 ////////////////////////////////////////////////////////////
@@ -362,7 +372,17 @@ void save_metadata(){
     data_file.print("lon: "); data_file.flush();
     data_file.println(lon); data_file.flush();
     data_file.print("timestamp: "); data_file.flush();
-    data_file.println(timestamp); data_file.flush();
+    data_file.print(now.year(), DEC); data_file.flush();
+    data_file.print("/"); data_file.flush();
+    data_file.print(now.month(), DEC); data_file.flush();
+    data_file.print("/"); data_file.flush();
+    data_file.print(now.day(), DEC); data_file.flush();
+    data_file.print(" "); data_file.flush();
+    data_file.print(now.hour(), DEC); data_file.flush();
+    data_file.print(":"); data_file.flush();
+    data_file.print(now.minute(), DEC); data_file.flush();
+    data_file.print(":"); data_file.flush();
+    data_file.println(now.second(), DEC); data_file.flush();
     data_file.print("sample_counter: "); data_file.flush();
     data_file.println(sample_counter); data_file.flush();
     data_file.print("name: "); data_file.flush();
@@ -397,7 +417,7 @@ void save_header(){
     }
     // Save header
     data_file.println("DATA"); data_file.flush();
-    data_file.println("DATE HOUR RED GREEN BLUE CLEAR LUX COLOR_TEMP BATTERY");
+    data_file.println("DATE HOUR RED GREEN BLUE CLEAR LUX COLOR_TEMP");
     data_file.flush();
     // Close dataFile
     data_file.close();
