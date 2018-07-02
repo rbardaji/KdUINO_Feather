@@ -109,6 +109,7 @@ void setup () {
     }
 
     //Update time of RTC
+    Serial.print("Write now the actual date and time (YYYYMMDDhhmmss)");
     update_rtc();
     
     // Read setting from settings.txt of the SD
@@ -511,6 +512,7 @@ void update_rtc() {
             // Read time
             now = rtc.now();
             serial_date();
+            return;
         }
         else delay(1000);
     }
