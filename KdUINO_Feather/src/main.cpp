@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include "RTClib.h"
 #include "Adafruit_TCS34725.h"
+#include <ESP8266WiFi.h>
 
 // Settings
 int initial_wait = 1;       // Time to wait before start the loop (in seconds)
@@ -64,6 +65,9 @@ void setup () {
     digitalWrite(BLUELED, LOW);
     // pinMode(TCS34725LED, OUTPUT);
     // digitalWrite(TCS34725LED, LOW);
+
+    // Wifi (disable) 
+    WiFi.mode(WIFI_OFF);
 
     // Serial
     Serial.begin(BAUDRATE);
