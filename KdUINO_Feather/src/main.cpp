@@ -7,10 +7,10 @@
 #include <ESP8266WiFi.h>
 
 // Settings
-int initial_wait = 1;       // Time to wait before start the loop (in seconds)
-int measures = 5;           // Number of measurements to do[1, 59]
+int initial_wait = 300;       // Time to wait before start the loop (in seconds)
+int measures = 10;           // Number of measurements to do[1, 59]
 int period = 1;             // Sampling period (in minutes) [1, 60]
-float depth = 0.3;          // Absolute depth of the device [0.1, 30] (in meters)
+float depth = 0.2;          // Absolute depth of the device [0.1, 30] (in meters)
 float lat = 0;              // Latitude
 float lon = 0;              // Longitude
 int sample_counter = 1;     // Counter of measurements
@@ -19,7 +19,7 @@ String maker = "ICM-CSIC";  // Maker name
 String curator = "ICM-CSIC";// Curator name
 String email = "";          // Email of the curator
 String sensors = "TCS34725";// List with name of used sensors "Sensor 1, ..., Sensor n"
-String description = "Test prototype without 2 light filters";
+String description = "Test";
 String place = "lab ICM";   // Text with place of deployment
                             // Units of the measurements "Unit 1, ..., Unit n"
 String units = "counts, counts, counts, counts, lux, degree_celsius";
@@ -107,6 +107,9 @@ void setup () {
         digitalWrite(REDLED, LOW);
         while (1);
     }
+
+    //Update time of RTC
+    update_rtc();
     
     // Read setting from settings.txt of the SD
 
