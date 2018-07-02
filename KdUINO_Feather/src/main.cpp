@@ -10,11 +10,11 @@
 int initial_wait = 300;       // Time to wait before start the loop (in seconds)
 int measures = 10;           // Number of measurements to do[1, 59]
 int period = 1;             // Sampling period (in minutes) [1, 60]
-float depth = 0.2;          // Absolute depth of the device [0.1, 30] (in meters)
+float depth = 0.8;          // Absolute depth of the device [0.1, 30] (in meters)
 float lat = 0;              // Latitude
 float lon = 0;              // Longitude
 int sample_counter = 1;     // Counter of measurements
-String name = "KdUINOPro";  // Name of the module   
+String name = "Kdustick 2";  // Name of the module   
 String maker = "ICM-CSIC";  // Maker name
 String curator = "ICM-CSIC";// Curator name
 String email = "";          // Email of the curator
@@ -36,7 +36,7 @@ String units = "counts, counts, counts, counts, lux, degree_celsius";
 // Vars
 RTC_PCF8523 rtc;
 const int chipSelect_SD = 15;
-Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_700MS, TCS34725_GAIN_1X);
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_154MS, TCS34725_GAIN_1X);
 uint16_t r, g, b, c, colorTemp, lux;
 float battery_level;
 DateTime now;
