@@ -7,7 +7,7 @@
 #include <ESP8266WiFi.h>
 
 // Settings
-int initial_wait = 300;       // Time to wait before start the loop (in seconds)
+int initial_wait = 1;       // Time to wait before start the loop (in seconds)
 int measures = 10;           // Number of measurements to do[1, 59]
 int period = 1;             // Sampling period (in minutes) [1, 60]
 float depth = 0.8;          // Absolute depth of the device [0.1, 30] (in meters)
@@ -75,14 +75,18 @@ void setup () {
     // RTC
     Serial.print("Initializing RTC.");
     if (! rtc.begin()) {
-        Serial.println("Couldn't find RTC");
         digitalWrite(REDLED, LOW);
-        while (1);
+        while (1){
+            Serial.println("Couldn't find RTC");
+            delay(10000);
+        }
     }
     Serial.println(" Done.");
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     if (! rtc.initialized()) {
         Serial.println("RTC is NOT running!");
+        // following line sets the RTC to the date & time this sketch was compiled
+        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+        // This line sets the RTC with an explicit date & time, for example to set
     }
     
     // SD
@@ -103,9 +107,11 @@ void setup () {
         tcs.clearInterrupt();
         Serial.println(" Done.");
     } else {
-        Serial.println("No TCS34725 found");
         digitalWrite(REDLED, LOW);
-        while (1);
+        while (1){
+            Serial.println("No TCS34725 found");
+            delay(10000);
+        }
     }
 
     //Update time of RTC
@@ -319,10 +325,12 @@ void save_data(){
     // so you have to close this one before opening another.
     File data_file = SD.open("data.txt", FILE_WRITE);
     if (! data_file) {
-        Serial.println("error opening data.txt");
         digitalWrite(REDLED, LOW);
         // Wait forever since we cant write data
-        while (1) ;
+        while (1){
+            Serial.println("error opening data.txt");
+            delay(10000);
+        }
     }
     // Save data
     data_file.print(now.year(), DEC); data_file.flush();
@@ -360,10 +368,12 @@ void save_metadata(){
     // so you have to close this one before opening another.
     File data_file = SD.open("data.txt", FILE_WRITE);
     if (! data_file) {
-        Serial.println("error opening data.txt");
         digitalWrite(REDLED, LOW);
         // Wait forever since we cant write data
-        while (1) ;
+        while (1){
+            Serial.println("error opening data.txt");
+            delay(10000);
+        }
     }
     // Save metadata
     data_file.println("METADATA"); data_file.flush();
@@ -418,10 +428,12 @@ void save_header(){
     // so you have to close this one before opening another.
     File data_file = SD.open("data.txt", FILE_WRITE);
     if (! data_file) {
-        Serial.println("error opening data.txt");
         digitalWrite(REDLED, LOW);
         // Wait forever since we cant write data
-        while (1) ;
+        while (1){
+            Serial.println("error opening data.txt");
+            delay(10000);
+        }
     }
     // Save header
     data_file.println("DATA"); data_file.flush();
