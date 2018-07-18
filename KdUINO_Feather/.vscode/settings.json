@@ -1,6 +1,6 @@
 {
     "terminal.integrated.env.windows": {
-        "PATH": "C:\\Users\\carlos\\.platformio\\penv\\Scripts;C:\\Users\\carlos\\.platformio\\penv;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\Program Files\\nodejs\\;C:\\Program Files\\Git\\cmd;C:\\WINDOWS\\System32\\OpenSSH\\;;C:\\Program Files\\Microsoft VS Code\\bin;C:\\Users\\carlos\\AppData\\Roaming\\npm;C:\\Program Files\\Java\\jdk1.8.0_171\\bin;C:\\Users\\carlos\\apache-ant-1.10.3\\bin;C:\\Users\\carlos\\AppData\\Local\\Android\\Sdk\\tools;C:\\Users\\carlos\\AppData\\Local\\Android\\Sdk\\platform-tools;%USERPROFILE%\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\Program Files\\nodejs\\;C:\\Program Files\\Git\\cmd;C:\\WINDOWS\\System32\\OpenSSH\\;;C:\\Program Files\\Microsoft VS Code\\bin;C:\\Users\\carlos\\AppData\\Roaming\\npm;C:\\Program Files\\Java\\jdk1.8.0_171\\bin;C:\\Users\\carlos\\apache-ant-1.10.3\\bin;C:\\Users\\carlos\\AppData\\Local\\Android\\Sdk\\tools;C:\\Users\\carlos\\AppData\\Local\\Android\\Sdk\\platform-tools;%USERPROFILE%\\AppData\\Local\\Microsoft\\WindowsApps",
+        "PATH": "C:\\Users\\caroga\\.platformio\\penv\\Scripts;C:\\Users\\caroga\\.platformio\\penv;C:\\MinGW-builds;C:\\Python35\\Lib\\site-packages\\PyQt5;C:\\ProgramData\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\Program Files\\nodejs\\;C:\\Program Files\\Git\\cmd;C:\\LF9571\\Bin;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Users\\caroga\\Anaconda3\\Scripts;C:\\Users\\caroga\\AppData\\Roaming\\npm;C:\\Program Files\\Microsoft VS Code\\bin;C:\\Users\\caroga\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\caroga\\Anaconda3\\Scripts;C:\\Users\\caroga\\AppData\\Local\\Programs\\MiKTeX 2.9\\miktex\\bin\\x64\\;C:\\MinGW-builds;C:\\Python35\\Lib\\site-packages\\PyQt5;C:\\ProgramData\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\Program Files\\nodejs\\;C:\\Program Files\\Git\\cmd;C:\\LF9571\\Bin;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Users\\caroga\\Anaconda3\\Scripts;C:\\Users\\caroga\\AppData\\Roaming\\npm;C:\\Program Files\\Microsoft VS Code\\bin;C:\\Users\\caroga\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\caroga\\Anaconda3\\Scripts;C:\\Users\\caroga\\AppData\\Local\\Programs\\MiKTeX 2.9\\miktex\\bin\\x64\\",
         "PLATFORMIO_CALLER": "vscode"
     },
     "cSpell.words": [
@@ -26,5 +26,9 @@
         "valarray": "cpp",
         "*.tcc": "cpp",
         "fstream": "cpp"
+    },
+    "terminal.integrated.env.osx": {
+        "PATH": "/Users/carlos/.platformio/penv/bin:/Users/carlos/.platformio/penv:/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "PLATFORMIO_CALLER": "vscode"
     },
 }

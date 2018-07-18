@@ -7,21 +7,21 @@
 #include <ESP8266WiFi.h>
 
 // Settings
-int initial_wait = 1;       // Time to wait before start the loop (in seconds)
-int measures = 10;           // Number of measurements to do[1, 59]
-int period = 1;             // Sampling period (in minutes) [1, 60]
-float depth = 0.8;          // Absolute depth of the device [0.1, 30] (in meters)
-float lat = 0;              // Latitude
-float lon = 0;              // Longitude
-int sample_counter = 1;     // Counter of measurements
-String name = "Kdustick 2";  // Name of the module   
-String maker = "ICM-CSIC";  // Maker name
-String curator = "ICM-CSIC";// Curator name
-String email = "";          // Email of the curator
-String sensors = "TCS34725";// List with name of used sensors "Sensor 1, ..., Sensor n"
-String description = "Test";
-String place = "lab ICM";   // Text with place of deployment
-                            // Units of the measurements "Unit 1, ..., Unit n"
+int initial_wait = 1;           // Time to wait before start the loop (in seconds)
+int measures = 40;              // Number of measurements to do[1, 59]
+int period = 1;                 // Sampling period (in minutes) [1, 60]
+float depth = 0.5;              // Absolute depth of the device [0.1, 30] (in meters)
+float lat = 0;                  // Latitude
+float lon = 0;                  // Longitude
+int sample_counter = 1;         // Counter of measurements
+String name = "KduinoProTEST";  // Name of the module   
+String maker = "ICM-CSIC";      // Maker name
+String curator = "ICM-CSIC";    // Curator name
+String email = "";              // Email of the curator
+String sensors = "TCS34725";    // List with name of used sensors "Sensor 1, ..., Sensor n"
+String description = "KduinoProTEST each measurement to SD";
+String place = "lab ICM";       // Text with place of deployment
+                                // Units of the measurements "Unit 1, ..., Unit n"
 String units = "counts, counts, counts, counts, lux, degree_celsius";
 
 // Contants
@@ -150,11 +150,11 @@ void loop () {
         if (now.second() == 0){
             // Measurement
             measure_TCS34725();
-            measure_battery();
+            // measure_battery();
             // Send data to serial comunication
-            serial_data();
+            // serial_data();
             // Save into SD card
-            save_data();
+            // save_data();
         }
     }
     actions();
@@ -166,32 +166,33 @@ void loop () {
 ////////////////////////////////////////////////////////////
 
 void measure_TCS34725(){
-    for (int i = 0; i < measures; i++) {
-        uint16_t r_, g_, b_, c_, colorTemp_, lux_;
-        // Measure
-        tcs.getRawData(&r_, &g_, &b_, &c_);
-        colorTemp_ = tcs.calculateColorTemperature(r_, g_, b_);
-        lux_ = tcs.calculateLux(r_, g_, b_);
-        // Calculation of means
-        if (i == 0) {
+    for (int i = 0; i < measures;) {
+        // Do not do measures on the same second
+        if (now.second() != rtc.now().second()) {
+            now = rtc.now();
+            uint16_t r_, g_, b_, c_, colorTemp_, lux_;
+
+            // Measure
+            tcs.getRawData(&r_, &g_, &b_, &c_);
+            colorTemp_ = tcs.calculateColorTemperature(r_, g_, b_);
+            lux_ = tcs.calculateLux(r_, g_, b_);
+
             r = r_;
             g = g_;
             b = b_;
             c = c_;
             colorTemp = colorTemp_;
             lux = lux_;
-        }
-        else {
-            r = (r + r_)/2;
-            g = (g + g_)/2;
-            b = (b + b_)/2;
-            c = (c + c_)/2;
-            colorTemp = (colorTemp + colorTemp_)/2;
-            lux = (lux + lux_)/2;
-        }
 
+            // measure_battery();
+            // Send data to serial comunication
+            serial_data();
+            // Save into SD card
+            save_data();
+            
+            i++;
+        }
     }
-    
 }
 
 void measure_battery(){
