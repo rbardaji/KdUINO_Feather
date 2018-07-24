@@ -8,21 +8,21 @@
 
 // Settings
 int initial_wait = 1;       // Time to wait before start the loop (in seconds)
-int measures = 10;           // Number of measurements to do[1, 59]
+int measures = 60;          // Number of measurements to do[1, 59]
 int period = 1;             // Sampling period (in minutes) [1, 60]
-float depth = 0.8;          // Absolute depth of the device [0.1, 30] (in meters)
+float depth = 3.0;          // Absolute depth of the device [0.1, 30] (in meters)
 float lat = 0;              // Latitude
 float lon = 0;              // Longitude
 int sample_counter = 1;     // Counter of measurements
-String name = "Kdustick 2";  // Name of the module   
+String name = "KduinoPro2"; // Name of the module   
 String maker = "ICM-CSIC";  // Maker name
 String curator = "ICM-CSIC";// Curator name
 String email = "";          // Email of the curator
 String sensors = "TCS34725";// List with name of used sensors "Sensor 1, ..., Sensor n"
-String description = "Test";
+String description = "KduinoPro2 module12 3.0m 60 measurements";
 String place = "lab ICM";   // Text with place of deployment
                             // Units of the measurements "Unit 1, ..., Unit n"
-String units = "counts, counts, counts, counts, lux, degree_celsius";
+String units = "counts, counts, counts, counts";
 
 // Contants
 #define BAUDRATE 9600
@@ -37,19 +37,19 @@ String units = "counts, counts, counts, counts, lux, degree_celsius";
 RTC_PCF8523 rtc;
 const int chipSelect_SD = 15;
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_154MS, TCS34725_GAIN_1X);
-uint16_t r, g, b, c, colorTemp, lux;
+uint16_t r, g, b, c; 
 float battery_level;
 DateTime now;
 
 // Function declaration
 void measure_TCS34725();
-void measure_battery();
 void serial_data();
 void serial_metadata();
 void serial_header();
 void serial_date();
-void serial_battery_level();
 void save_data();
+void save_new_line();
+void save_date();
 void save_metadata();
 void save_header();
 void actions();
@@ -127,7 +127,7 @@ void setup () {
     delay(initial_wait*1000);
     
     // Read time
-    now = rtc.now();
+    // now = rtc.now();
     serial_date();
 
     // Write metadata and header into file.txt
@@ -148,13 +148,20 @@ void loop () {
     // Check if it is time to measure
     if (now.minute() % period == 0){
         if (now.second() == 0){
+            // Save time
+            save_date();
+            serial_date();
+            
             // Measurement
-            measure_TCS34725();
-            measure_battery();
-            // Send data to serial comunication
-            serial_data();
-            // Save into SD card
-            save_data();
+            for (int i = 0; i < measures; i++) {
+                measure_TCS34725();
+                save_data();
+                serial_data();
+            }
+            save_new_line();
+            // Just to check time
+            now = rtc.now();
+            serial_date();
         }
     }
     actions();
@@ -166,63 +173,28 @@ void loop () {
 ////////////////////////////////////////////////////////////
 
 void measure_TCS34725(){
-    for (int i = 0; i < measures; i++) {
-        uint16_t r_, g_, b_, c_, colorTemp_, lux_;
-        // Measure
-        tcs.getRawData(&r_, &g_, &b_, &c_);
-        colorTemp_ = tcs.calculateColorTemperature(r_, g_, b_);
-        lux_ = tcs.calculateLux(r_, g_, b_);
-        // Calculation of means
-        if (i == 0) {
-            r = r_;
-            g = g_;
-            b = b_;
-            c = c_;
-            colorTemp = colorTemp_;
-            lux = lux_;
-        }
-        else {
-            r = (r + r_)/2;
-            g = (g + g_)/2;
-            b = (b + b_)/2;
-            c = (c + c_)/2;
-            colorTemp = (colorTemp + colorTemp_)/2;
-            lux = (lux + lux_)/2;
-        }
-
-    }
+        
+    uint16_t r_, g_, b_, c_;
+    // Measure
+    tcs.getRawData(&r_, &g_, &b_, &c_);
     
-}
-
-void measure_battery(){
-    // read the battery level from the analog in pin.
-    // analog read level is 10 bit 0-1023 (0V-1V).
-    // our 1M & 220K voltage divider takes the max
-    // lipo value of 4.2V and drops it to 0.758V max.
-    // this means our min analog read value should be 580 (3.14V)
-    // and the max analog read value should be 774 (4.2V).
-    battery_level = analogRead(A0);
-    // convert battery level to percent
-    battery_level = map(battery_level, 580, 774, 0, 100);
+    // Save data into global variables
+    r = r_;
+    g = g_;
+    b = b_;
+    c = c_;
 }
 
 ////////////////////////////////////////////////////////////
 //////////////////// SERIAL COMMUNICATION //////////////////
 ////////////////////////////////////////////////////////////
 
-void serial_battery_level(){
-    /*It sends the data throught the serial  communication*/
-    Serial.print("Battery Level: ");
-    Serial.println(battery_level);
-}
-
 void serial_date(){
     /*It sends the data throught the serial  communication*/
-    Serial.print("NEW Date: ");
     Serial.print(now.year(), DEC);
-    Serial.print("/");
+    Serial.print("-");
     Serial.print(now.month(), DEC);
-    Serial.print("/");
+    Serial.print("-");
     Serial.print(now.day(), DEC);
     Serial.print(" ");
     Serial.print(now.hour(), DEC);
@@ -234,17 +206,6 @@ void serial_date(){
 
 void serial_data(){
     /*It sends the data throught the serial  communication*/
-    Serial.print(now.year(), DEC);
-    Serial.print("/");
-    Serial.print(now.month(), DEC);
-    Serial.print("/");
-    Serial.print(now.day(), DEC);
-    Serial.print(" ");
-    Serial.print(now.hour(), DEC);
-    Serial.print(":");
-    Serial.print(now.minute(), DEC);
-    Serial.print(":");
-    Serial.print(now.second(), DEC);
     Serial.print(" ");
     Serial.print(r, DEC);
     Serial.print(" ");
@@ -253,12 +214,6 @@ void serial_data(){
     Serial.print(b, DEC);
     Serial.print(" ");
     Serial.print(c, DEC);
-    Serial.print(" ");
-    Serial.print(lux);
-    Serial.print(" ");
-    Serial.print(colorTemp);
-    // Serial.print(" ");
-    // Serial.print(battery_level);
     Serial.println("");
 }
 
@@ -279,9 +234,9 @@ void serial_metadata(){
     Serial.println(lon);
     Serial.print("timestamp: ");
     Serial.print(now.year(), DEC);
-    Serial.print("/");
+    Serial.print("-");
     Serial.print(now.month(), DEC);
-    Serial.print("/");
+    Serial.print("-");
     Serial.print(now.day(), DEC);
     Serial.print(" ");
     Serial.print(now.hour(), DEC);
@@ -313,7 +268,7 @@ void serial_header(){
     /*It sends the header info of the datathrought the serial
     communication*/
     Serial.println("DATA");
-    Serial.println("DATE HOUR RED GREEN BLUE CLEAR LUX COLOR_TEMP");
+    Serial.println("DATE HOUR RED GREEN BLUE CLEAR");
 }
 
 ////////////////////////////////////////////////////////////
@@ -333,17 +288,6 @@ void save_data(){
         }
     }
     // Save data
-    data_file.print(now.year(), DEC); data_file.flush();
-    data_file.print("/"); data_file.flush();
-    data_file.print(now.month(), DEC); data_file.flush();
-    data_file.print("/"); data_file.flush();
-    data_file.print(now.day(), DEC); data_file.flush();
-    data_file.print(" "); data_file.flush();
-    data_file.print(now.hour(), DEC); data_file.flush();
-    data_file.print(":"); data_file.flush();
-    data_file.print(now.minute(), DEC); data_file.flush();
-    data_file.print(":"); data_file.flush();
-    data_file.print(now.second(), DEC); data_file.flush();
     data_file.print(" "); data_file.flush();
     data_file.print(r, DEC); data_file.flush();
     data_file.print(" "); data_file.flush();
@@ -352,12 +296,51 @@ void save_data(){
     data_file.print(b, DEC); data_file.flush();
     data_file.print(" "); data_file.flush();
     data_file.print(c, DEC); data_file.flush();
+    // Close dataFile
+    data_file.close();
+}
+
+void save_date(){
+    // open the file. note that only one file can be open at a time,
+    // so you have to close this one before opening another.
+    File data_file = SD.open("data.txt", FILE_WRITE);
+    if (! data_file) {
+        digitalWrite(REDLED, LOW);
+        // Wait forever since we cant write data
+        while (1){
+            Serial.println("error opening data.txt");
+            delay(10000);
+        }
+    }
+    // Save data
+    data_file.print(now.year(), DEC); data_file.flush();
+    data_file.print("-"); data_file.flush();
+    data_file.print(now.month(), DEC); data_file.flush();
+    data_file.print("-"); data_file.flush();
+    data_file.print(now.day(), DEC); data_file.flush();
     data_file.print(" "); data_file.flush();
-    data_file.print(lux); data_file.flush();
-    data_file.print(" "); data_file.flush();
-    data_file.print(colorTemp); data_file.flush();
-    // data_file.print(" "); data_file.flush();
-    // data_file.print(battery_level); data_file.flush();
+    data_file.print(now.hour(), DEC); data_file.flush();
+    data_file.print(":"); data_file.flush();
+    data_file.print(now.minute(), DEC); data_file.flush();
+    data_file.print(":"); data_file.flush();
+    data_file.print(now.second(), DEC); data_file.flush();
+    // Close dataFile
+    data_file.close();
+}
+
+void save_new_line(){
+    // open the file. note that only one file can be open at a time,
+    // so you have to close this one before opening another.
+    File data_file = SD.open("data.txt", FILE_WRITE);
+    if (! data_file) {
+        digitalWrite(REDLED, LOW);
+        // Wait forever since we cant write data
+        while (1){
+            Serial.println("error opening data.txt");
+            delay(10000);
+        }
+    }
+    // Save new line
     data_file.println(""); data_file.flush();
     // Close dataFile
     data_file.close();
@@ -391,9 +374,9 @@ void save_metadata(){
     data_file.println(lon); data_file.flush();
     data_file.print("timestamp: "); data_file.flush();
     data_file.print(now.year(), DEC); data_file.flush();
-    data_file.print("/"); data_file.flush();
+    data_file.print("-"); data_file.flush();
     data_file.print(now.month(), DEC); data_file.flush();
-    data_file.print("/"); data_file.flush();
+    data_file.print("-"); data_file.flush();
     data_file.print(now.day(), DEC); data_file.flush();
     data_file.print(" "); data_file.flush();
     data_file.print(now.hour(), DEC); data_file.flush();
@@ -437,7 +420,7 @@ void save_header(){
     }
     // Save header
     data_file.println("DATA"); data_file.flush();
-    data_file.println("DATE HOUR RED GREEN BLUE CLEAR LUX COLOR_TEMP");
+    data_file.println("DATE HOUR RED GREEN BLUE CLEAR");
     data_file.flush();
     // Close dataFile
     data_file.close();
